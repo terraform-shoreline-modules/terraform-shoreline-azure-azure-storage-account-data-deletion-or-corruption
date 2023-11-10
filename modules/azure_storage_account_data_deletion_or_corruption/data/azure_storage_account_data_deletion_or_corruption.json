@@ -1,0 +1,146 @@
+{
+  "name": "azure_storage_account_data_deletion_or_corruption",
+  "description": "This incident type involves the accidental deletion or corruption of data in an Azure storage account. It can result in the permanent loss of critical data. The recommended resolution is to set up soft delete or versioning to protect against accidental data loss and regularly back up critical data.",
+  "params": [
+    {
+      "name": "VAULT_NAME",
+      "value": ""
+    },
+    {
+      "name": "CONTAINER_NAME",
+      "value": ""
+    },
+    {
+      "name": "BLOB_NAME",
+      "value": ""
+    },
+    {
+      "name": "CONNECTION_STRING",
+      "value": ""
+    },
+    {
+      "name": "RESOURCE_GROUP_NAME",
+      "value": ""
+    },
+    {
+      "name": "STORAGE_ACCOUNT_NAME",
+      "value": ""
+    },
+    {
+      "name": "HOST_NAME",
+      "value": ""
+    },
+    {
+      "name": "K8S_CLUSTER_NAME",
+      "value": ""
+    },
+    {
+      "name": "NAMESPACE",
+      "value": ""
+    }
+  ],
+  "cells": [
+    {
+      "name": "cell_1",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Azure Storage Account Data Deletion or Corruption\nThis incident type involves the accidental deletion or corruption of data in an Azure storage account. It can result in the permanent loss of critical data. The recommended resolution is to set up soft delete or versioning to protect against accidental data loss and regularly back up critical data."
+    },
+    {
+      "name": "cell_2",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check if the storage account is still available"
+    },
+    {
+      "name": "cell_3",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `az storage account show --name ${STORAGE_ACCOUNT_NAME} --resource-group ${RESOURCE_GROUP_NAME}`"
+    },
+    {
+      "name": "cell_4",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## List the blobs in a container to check if they're still accessible"
+    },
+    {
+      "name": "cell_5",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `az storage blob list --container-name ${CONTAINER_NAME} --connection-string '${CONNECTION_STRING}'`"
+    },
+    {
+      "name": "cell_6",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check if versioning is enabled for the storage account"
+    },
+    {
+      "name": "cell_7",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `az storage account blob-service-properties show --account-name ${STORAGE_ACCOUNT_NAME} --resource-group ${RESOURCE_GROUP_NAME} --query \"isVersioningEnabled\"`"
+    },
+    {
+      "name": "cell_8",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check if soft delete is enabled for the storage account"
+    },
+    {
+      "name": "cell_9",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `az storage account blob-service-properties show --account-name ${STORAGE_ACCOUNT_NAME} --resource-group ${RESOURCE_GROUP_NAME} --query \"deleteRetentionPolicy.enabled\"`"
+    },
+    {
+      "name": "cell_10",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## List the versions of a blob to check if they're still accessible"
+    },
+    {
+      "name": "cell_11",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `az storage blob list --connection-string '${CONNECTION_STRING}' --container-name ${CONTAINER_NAME} --include v -o json --query \"reverse(sort_by([?name=='${BLOB_NAME}'], &versionId))[0].versionId\"`"
+    },
+    {
+      "name": "cell_12",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check the logs for any suspicious activity that may have caused the data deletion or corruption"
+    },
+    {
+      "name": "cell_13",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `az monitor activity-log list`"
+    },
+    {
+      "name": "cell_14",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check the backup status to ensure that critical data is regularly backed up"
+    },
+    {
+      "name": "cell_15",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `az backup job list --resource-group ${RESOURCE_GROUP_NAME} --vault-name ${VAULT_NAME} --output table`"
+    },
+    {
+      "name": "cell_16",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Set up soft delete or versioning in the Azure storage account to protect against accidental data loss. This will allow deleted or overwritten files to be recovered within a certain time frame."
+    },
+    {
+      "name": "cell_17",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "host | host_name=$HOST_NAME | invoke_enable_soft_delete_and_versioning($RESOURCE_GROUP_NAME, $STORAGE_ACCOUNT_NAME)"
+    }
+  ]
+}
